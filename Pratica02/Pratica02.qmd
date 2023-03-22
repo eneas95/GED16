@@ -1,0 +1,647 @@
+---
+lang: pt  
+title: "GED-16: Análise de Regressão"
+subtitle: "AULA02: Prática (1o. semestre/2023)"
+author: 
+- Lucas Inamine de Angelo 
+- Luiz Vasconcelos Júnior
+- Marcos Antônio dos Santos Fonseca
+date: "2023-03-21"  
+format:
+  html:
+    theme: cosmo
+execute:
+  echo: true
+  eval: true
+  warning: false    
+---
+
+----
+
+### Introdução
+
+Abalone é um tipo de molusco que vive em águas marinhas costeiras em diversas regiões do globo. A concha do abalone apresenta tamanho que varia entre 10 a 25cm e sua coloração interior iridescente nacarada é muito valorizada na confecção de jóias e ornamentos; além disso, a carne do animal é considerada uma iguaria em muitos países. Devido ao seu alto valor comercial e consequente pesca excessiva, além da degradação de seu habitat pela ação humana, diversas espécies de abalone atualmente correm risco de extinção. Existem mais de 100 espécies de abalone ao redor do mundo, das quais cerca de 15 são produzidas por meio de aquicultura. Determinar a idade do abalone de maneira acurada é importante tanto em termos comerciais (o valor comercial do abalone está associado à sua idade) bem como em termos ambientais (condições ambientais podem afetar a saúde do animal). A idade do animal pode ser determinada a partir da contagem do número de anéis na concha, utilizando um microscópio, a partir de um procedimento delicado e trabalhoso.
+
+
+![Abalone (Image by <a href="https://pixabay.com/users/lisaleo-3220940/?utm_source=link-attribution&amp;utm_medium=referral&amp;utm_campaign=image&amp;utm_content=4919586">Lisa Yount</a> from <a href="https://pixabay.com//?utm_source=link-attribution&amp;utm_medium=referral&amp;utm_campaign=image&amp;utm_content=4919586">Pixabay</a>)](img/abalone.jpg){width=80%}
+
+Os dados disponíveis no arquivo `data/abalone/abalone.data` foram
+obtidos no [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/Abalone) e são bastante utilizados na investigação de métodos de Machine Learning. Tais dados foram coletados a partir do estudo original:
+
+Warwick J Nash, Tracy L Sellers, Simon R Talbot, Andrew J Cawthorn and
+	Wes B Ford (1994) "The Population Biology of Abalone (_Haliotis_
+	species) in Tasmania. I. Blacklip Abalone (_H. rubra_) from the
+	North	Coast and Islands of Bass Strait", Sea Fisheries Division,
+	Technical Report No. 48 (ISSN 1034-3288).
+
+O principal objetivo do projeto era determinar a idade do molusco a partir de medidas físicas do animal mais fáceis de serem obtidas. Os dados originais foram pré-processados no sentido de remover observações faltantes e os valores das variáveis contínuas foram dividos por 200. Há um total de 4177 observações coletadas para 9 variáveis:
+
+1. `sex`: sexo do animal (M, F, I)
+2. `length`: maior comprimento da concha (mm)
+3. `diameter`: comprimento perpendicular à `length` (mm)
+4. `height`: comprimento da carne da concha (mm)
+5. `whole_w`: peso do animal (g)
+6. `shucked_w`: peso da carne (g)
+7. `viscera_w`: peso das vísceras (g)
+8. `shell_w`: peso da concha (g)
+9. `rings`: número de anéis (a idade é obtida somando 1.5)
+
+Mais informações a respeito dos dados podem ser obtidas no arquivo `data/abalone/abalone.names`.
+
+----
+
+### Análise Exploratória de Dados
+
+O primeiro passo realizado foi limpar a área de trabalho com o comando `rm(list = ls())`, para assim importar a base e dados presente no arquivo `abalone.data`, armazenado no *github*. Os dados então são lidos e armazenados em um objeto chamado *abalone*, do tipo tabela. Não há cabeçalho no arquivo de entrada, portanto, foram atribuídos nomes para as colunas do objeto tabela.
+
+- Bibliotecas utilizadas:
+
+```{r libraries}
+#| warning: false
+#| message: false
+library(tinytex)
+library(readr)
+library(ggplot2)
+library(pander)
+library(details)
+library(sessioninfo)
+library(tidyverse)
+```
+
+- A Equipe, por razões de reproducibilidade, optou por importar a base de dados de um repositório do *github*:
+  
+```{r importdata}
+#Limpar a área de trabalho
+rm(list=ls())
+#carregar os dados
+abalone <- read_csv("https://raw.githubusercontent.com/eneas95/GED16/main/Pratica01/data/abalone/abalone.data", col_names = FALSE)
+# atribuir nomes às variáveis (colunas da tabela)
+names(abalone) <- c("sex", "length", "diameter", "height", "whole_w", "shucked_w", "viscera_w", "shell_w", "rings")
+```
+- Utilizando o comando `str(auto)`, foi obtida a seguinte estrutura dos dados:
+
+```{r sr1, echo=FALSE}
+# Verifica estrutura dos dados
+str(abalone)
+```
+FOi verificado que existe 4.177 observações e 9 variáveis. Cada observação corresponde a uma linha do objeto tabela `abalone`, conforme exibido logo abaixo.
+
+```{r table}
+pander(abalone[1:10,], caption = "Primeiras 10 linhas do dataset abalone.")
+```
+
+Ademais, percebe-se que `sex` está codificado como um *character*, porém, para realização da análise exploratória, deseja-se que ela seja recodificada como *factor*. A variável *rings* também será recodificada com um *integer* no intuito de ocupar menos espaço na memória.
+
+```{r names}
+#Verificar os nomes das variáveis
+names(abalone)
+```
+
+- Agora, recodificando as variáveis em questão:
+```{r recode}
+abalone <- abalone %>%
+  mutate_at("sex", as.factor) %>%
+  mutate_at("rings", as.integer)
+str(abalone)
+```
+Utilizando a função `str(auto)` novamente, verificou-se que agora os dados estão codificados adequadamente.
+
+No intuito de se obter resumos numéricos unidimensionais foi utilizada a função `summary`. Para as variáveis categóricas, a função `summary` retorna o número de observações em cada classe.
+
+```{r summary1}
+summary(abalone)
+```
+É possível perceber por meio da função `summary` que, apesar de não haver dados faltantes, existem inconsistências na coluna `height`, visto que a altura do molusco deve ser sempre um valor numérico maior do que zero.
+No entanto, é necessário analisar a quantidade de dados inconsistentes nessa amostra para então decidir como proceder.
+
+- A Equipe desenvolveu o seguinte código em R para determinar esta quantidade:
+
+```{r countzero}
+error <- 0.000000001
+count_r <- 0
+for (height in abalone$height){
+  if(height <= error){
+    count_r <- count_r+1
+  }
+}
+count_r
+  
+```
+Logo, como há apenas 2 casos com inconsistências, a Equipe decidiu desprezá-los e retirá-los do *dataset*, uma vez que eram poucos comparados com o total de 4.177 observações.
+
+- Para tal, foi utilizada a função `filter´:
+```{r filter2}
+abalone <- abalone %>% filter(height > 0)
+summary(abalone)
+```
+```{r table2, echo=FALSE}
+abalone
+```
+
+
+As 2 linhas com altura 0 foram retiradas do *dataset* e, por conseguinte, restaram 4.175 observações. Agora, é possivel gerar gráficos a fim de explorar a relação entre as variáveis.
+
+### Resumos gráficos unidimensionais
+
+Por meio de histograma, é possível apresentar a distribuição dos valores observados para uma variável. No caso, foram gerados os histogramas para as variáveis `length`e `height`.
+
+```{r lengthhist}
+#| message: false 
+# Histograma de `lenght`
+ggplot(abalone, aes(x = length)) +
+  geom_histogram(aes(y = after_stat(density))) +
+  # adiciona linha de densidade estimada (suavização)
+  geom_density(lwd = 1, colour = 4,
+               fill = 4, alpha = 0.25) +
+  # adiciona dispersão unidimensional de `length`
+  geom_rug(alpha = 0.5)
+```
+```{r heighthist}
+#| message: false 
+# Histograma de `height`
+ggplot(abalone, aes(x = height)) +
+  geom_histogram(aes(y = after_stat(density))) +
+  # adiciona linha de densidade estimada (suavização)
+  geom_density(lwd = 1, colour = 4,
+               fill = 4, alpha = 0.25) +
+  # adiciona dispersão unidimensional de `height`
+  geom_rug(alpha = 0.5)
+```
+
+A curva em azul claro adicionada ao histograma é a curva de densidade estimada, a qual estima a distribuição da variável de resposta. A curva de densidade estimada é contínua, diferentemente de um histograma, logo, proporciona uma melhor representação da distribuição de uma variável numérica que um histograma.
+
+Também foram gerados os gráficos *boxplot* para essas duas variáveis:
+
+```{r boxplot1}
+# Boxplot de `length`
+ggplot(abalone, aes(x = length, y = "")) +
+  # adiciona barras de erros
+  geom_errorbar(stat = "boxplot", width = 0.1) +
+  # adiciona boxplot
+  geom_boxplot () +
+  # adiciona dispersão unidimensional de `length`
+  geom_rug(alpha = 0.5) +
+  # adiciona rótulo aos eixos
+  labs(y = "", x = "length")
+```
+
+```{r boxplot2}
+# Boxplot de `height`
+ggplot(abalone, aes(x = height, y = "")) +
+  # adiciona barras de erros
+  geom_errorbar(stat = "boxplot", width = 0.1) +
+  # adiciona boxplot
+  geom_boxplot () +
+  # adiciona dispersão unidimensional de `height`
+  geom_rug(alpha = 0.5) +
+  # adiciona rótulo aos eixos
+  labs(y = "", x = "height")
+```
+Com relação ao gráfico *boxplot*, ele nos dá 5 estatísticas robustas e também mostra possíveis *outliers*. A caixa é delimitada pelos quartis inferior e superior e a linha no centro corresponde à mediana. Portanto, 50% das observações se encontram entre os valores que determinam as extremidades da caixa. O comprimento da caixa é chamado distância ou amplitude inter-quartis (ou IQR) e corresponde à diferença entre os quartis superior e inferior.
+
+As linhas horizontais que se afastam da caixa são os “whiskers”, cujo comprimento é tal que a distância máxima entre as duas extremidades vale 4 * IQR. Qualquer valor além dos “whiskers” é marcado como um ponto extremo, ou *outlier*.
+
+Logo, é possível vizualizar pelo *boxplot* da variável *height* que existem 2 pontos marcados como *outliers*. 
+
+### Resumos gráficos multidimensionais
+
+No intuito de comparar visualmente diferentes distribuições e analisar a relação entre as variáveis, foram gerados os seguintes boxplots, histogramas e curvas de densidade estimada, para diferentes categorias. Primeiramente, a Equipe decidiu comparar o número de anéis (rings) com as distintas categorias da variável `sex`. Será que o número de anéis difere de acordo com o sexo?
+
+```{r mult1}
+# Boxplots
+ggplot(abalone, aes(x = rings, y = sex)) +
+  geom_boxplot()
+```
+
+```{r mult2}
+# Histogramas 
+ggplot(abalone, aes(x = rings, fill = sex)) +
+  geom_histogram(alpha = 0.25, position = "identity")
+```
+
+```{r mult3}
+# Densidades
+ggplot(abalone, aes(x = rings, fill = sex)) +
+  geom_density(alpha = 0.5, position = "identity")
+```
+
+Pelos gráficos acima, não é possível chegar a uma conclusão. O *boxplot* e o gráfico de densidades estimadas, a princípio, exibem distribuições semelhantes para o número de anéis tanto para a sexo masculino quanto para o feminino.
+
+Em seguida, para analisar a relação entre variáveis quantitativas, foram gerados gráficos de dispersão:
+
+```{r dispersao}
+# Matriz de gráficos de dispersão (base R)
+plot(abalone[, -c(1)])
+```
+
+```{r ggally}
+#| warning: false
+#| message: false
+# Matriz de gráficos de dispersão (GGali)
+library(GGally)
+ggpairs(abalone[, -c(1)])
+```
+
+A partir dos gráficos acima, é possível ter uma ideia geral de como as variáveis quantitativas se relacionam. Por exemplo, as variáveis `length`, `diameter`, `height`, `whole_w`, `shucked_w`, `viscera_w` e `shell_w` possuem elevados coeficientes de correlação entre si. A variável `rings` é aquela que mais distoa nesse sentindo.
+
+```{r cor1}
+# Coef. de correlacao
+cor (abalone$rings, abalone$shucked_w)
+```
+O número de anéis da concha (rings) possui uma correlação baixa com o peso da carne (shucked_w), por exemplo.
+
+```{r cor2}
+cor (abalone$rings, abalone$shell_w)
+```
+Todas as correlações entre as variáveis são positivas, o que faz sentido dado que está se analisando peso, tamanho, altura e número de anéis. Além disso, percebe-se que o número de aneis é o menos correlacionável com as outras variáveis. Porém, a maior correlação é com o peso da concha, o que faz sentido de certa maneira pois quanto maior a concha, maior o número de anéis.
+
+```{r rings_shell}
+ggplot(abalone) +
+  geom_point(aes(x= rings, y = shell_w), na.rm = TRUE)
+```
+Dessa forma, a Equipe formulou a seguinte hipótese: à medida em que o animal envelhece, sua concha aumenta de tamanho e peso, o que, consequentemente, aumenta o número de anéis da concha.
+
+### Transformações
+
+A relação estatística entre a variável altura e peso do animal é curvilínea conforme mostra o gráfico abaixo, o qual também evidencia a alta correlação entre essas duas variáveis.
+
+```{r h_whole}
+ggplot(abalone) +
+  geom_point(aes(x= height, y = whole_w), na.rm = TRUE)
+```
+Existem 2 outliers de acordo com o gráfico acima, o que confere com o que fora obtido nos gráficos *boxplot*. Ou seja, há 2 objetos com uma altura muito divergente da média.
+
+Além disso, é possível realizar certas transformções á variàvel `height` a fim de auxiliar no processo de formulação de novas hipóteses.
+
+```{r trans}
+
+ggplot(abalone) +
+  geom_point(aes(x= sqrt(height), y = whole_w), na.rm = TRUE)
+
+ggplot(abalone) +
+  geom_point(aes(x= 1/height, y = whole_w), na.rm = TRUE)
+
+ggplot(abalone) +
+  geom_point(aes(x= log2(height), y = whole_w), na.rm = TRUE)
+```
+
+----
+
+
+### Análise de Regressão
+
+#### Parte 1: Implementação de um modelo de regressão linear simples para a variável de resposta `length`, utilizando cada uma das seguintes variáveis explicativas  `diameter`, `shucked_w`, `shell_w` e `rings`:
+
+1. Assuma que um modelo de regressão linear simples é adequado para modelar a relação da variável de resposta `length` a cada uma das variáveis explicativas  `diameter`, `shucked_w`, `shell_w` e `rings`.
+
+Primeiramente, analisar se o modelo de regressão linear simples é adequado por meio dos gráficos de dispersão e do coeficiente de correlação:
+
+
+```{r dispersao1}
+#Diameter
+ggplot(abalone) +
+  geom_point(aes(x= length, y = diameter), na.rm = TRUE)
+#shucked_w
+ggplot(abalone) +
+  geom_point(aes(x= length, y = shucked_w), na.rm = TRUE)
+#shell_w
+ggplot(abalone) +
+  geom_point(aes(x= length, y = shell_w), na.rm = TRUE)
+#rings
+ggplot(abalone) +
+  geom_point(aes(x= length, y = rings), na.rm = TRUE)
+```
+
+Por meio dos gráficos gerados acima, é possível assumir que o modelo de regressão linear simples é adequado. Porém, no intuito de  oferecer mais embasamento a esta decisão, foram calculados os coeficientes de correlaçao:
+
+```{r cor1}
+#Diameter
+cor(abalone$length, abalone$diameter)
+#shucked_w
+cor(abalone$length, abalone$shucked_w)
+#shell_w
+cor(abalone$length, abalone$shell_w)
+#rings
+cor(abalone$length, abalone$rings)
+```
+Dessa forma, a menor correlação obtida foi entre o par `length-rings`, porém, como o resultado foi relativamente considerãvel (0.5564644), é possível concluir que o modelo de regressão pode ser aplicado para os casos analisados, visto que, para os outros 3 pares a correlação é próxima de 1, isto é, fortemente linear.
+
+  + Construa um modelo de regressão para cada um desses pares de variáveis;
+  
+  Em seguida, foram criadas novas variáveis a fim de tornar a análise mais simples e objetiva:
+  
+  - Par `length`-`diameter`:
+  
+```{r var1_1}
+# Constrói nova base de dados para análise
+abalone_len_diam <- abalone |>
+  # seleciona apenas variáveis de interesse
+  select(length, diameter)
+
+abalone_len_shucked <- abalone |>
+  select(length, shucked_w)
+
+abalone_len_shell <- abalone |>
+  select(length, shell_w)
+
+abalone_len_rings <- abalone |>
+  select(length, rings)
+
+# gera resumo dos novos dados  
+summary(abalone_len_diam)
+```
+Sabe-se que o diâmetro deve ser maior que zero, logo o coeficiente linear da reta estimada não tem significado prático.
+
+```{r redmod1}
+# Constrói modelo de regressao linear simples (rls)
+abalone_rls1 <- lm(length ~ diameter, data = abalone_len_diam)
+# variável de resposta: `lenght` 
+# variável explicativa: `diameter`
+
+# retorna coeficientes estimados do modelo de rls
+abalone_rls1
+```
+O modelo obtido nesse caso foi de 1a. Ordem, A variável de resposta é `length`, enquanto que a variável explicativa é `diameter`.
+
+ - Par `length`-`shucked_w`:
+
+```{r summary2}
+summary(abalone_len_shucked)
+```
+Assim como foi feito a análise do diâmetro, não fa sentido o peso da carne do animal ser nulo. Logo, ele deve ser maior do que zero.
+
+```{r remod2}
+# Constrói modelo de regressao linear simples (rls)
+abalone_rls2 <- lm(length ~ shucked_w, data = abalone_len_shucked)
+# variável de resposta: `lenght` 
+# variável explicativa: `shucked_w`
+
+# retorna coeficientes estimados do modelo de rls
+abalone_rls2
+```
+O modelo obtido também foi de 1a. Ordem, A variável de resposta é `length`, enquanto que a variável explicativa nesse caso é `shucked_w`.
+
+ - Par `length`-`shell_w`:
+
+```{r summary3}
+summary(abalone_len_shell)
+```
+Analogamente aos casos anteriores, o coeficiente linear da reta, isto é, a situação em que o peso da concha é nulo, não deve ser incluído no modelo. Tal cenário condiz com a situação em que o abalone é jovem o suficiente para sua concha ainda não ter se formado, porém o comprimento da concha deveria ser nulo por consequência, o que não é o caso. O resultado obtido foi de 1a. ordem, a variável de resposta é `length` e a explicativa é `shell_w`.
+
+```{r modred3}
+# Constrói modelo de regressao linear simples (rls)
+abalone_rls3 <- lm(length ~ shell_w, data = abalone_len_shell)
+# variável de resposta: `lenght` 
+# variável explicativa: `shell_w`
+
+# retorna coeficientes estimados do modelo de rls
+abalone_rls3
+```
+
+ - Par `length`-`rings``:
+
+```{r summary4}
+summary(abalone_len_rings)
+```
+Analogamente, o modelo não deve comportar o caso em que o número de anéis é zero, ou seja, o caso em que o abalone é relativamente um recém-nascido.Pois, se o número de anéis da concha é zero, o comprimento da concha também deveria ser nulo. O resultado também é de 1a. ordem, a variável de resposta é `length` e a explicativa é `rings`.
+
+```{r modred4}
+# Constrói modelo de regressao linear simples (rls)
+abalone_rls4 <- lm(length ~ rings, data = abalone_len_rings)
+# variável de resposta: `lenght` 
+# variável explicativa: `rings`
+
+# retorna coeficientes estimados do modelo de rls
+abalone_rls4
+```
+
+  
+  + Construa gráficos de dispersão (separados) com as retas de regressão ajustadas para cada caso;  
+  
+  **Interpretação do Modelo Ajustado:**
+  
+  - Par `length`-`diameter`:
+  
+  `lenght = 0.03692 + 1.19416.diameter` (Modelo Ajustado)
+  
+  Nesse caso, o coeficiente linear não tem significado prático, pois não faz sentido o diâmetro do animal ser nulo. Porém, nota-se que quando o diâmetro é zero, `length` assumirá um valor aproximadamente zero, o que indica que o abalone ainda não nasceu. O coeficiente angular indica o aumento no comprimento da concha para cada milímetro de aumento no diâmetro. A relação é positiva.
+  
+```{r reta1}
+# gera gráfico de dispersão
+ggplot(abalone_len_diam, aes(x = diameter, y = length)) +
+  geom_point() +
+  # adiciona reta de regressão estimada
+  geom_smooth(method = lm, se = FALSE)
+```
+  
+  - Par `length`-`shucked_w`:
+  
+  `lenght = 0.3495 + 0.4857.shucked_w` (Modelo Ajustado)
+  
+  O coeficiente linear não tem significado prático aqui, pois não faz sentido o peso da carne do abalone ser nulo e o comprimento da concha não. O coeficiente angular indica um aumento no comprimento da concha para cada 1g de aumento no peso da carne. A relação é positiva.
+  
+```{r reta2}
+# gera gráfico de dispersão
+ggplot(abalone_len_shucked, aes(x = shucked_w, y = length)) +
+  geom_point() +
+  # adiciona reta de regressão estimada 
+  geom_smooth(method = lm, se = FALSE)
+```
+
+  - Par `length`-`shell_w`:
+  
+  `lenght = 0.3390  +  0.7749.shell_w` (Modelo Ajustado)
+  
+  O coeficiente linear também não possui significado prático, pois não fa sentido o peso da concha ser nulo, enquanto o comprimento da concha ser aproximadamente 339 mg. O coeficiente angular mostra que um aumento de 1g no peso da concha acarreta em um aumento no comprimento da própria. A relação é positiva.
+  
+```{r reta3}
+# gera gráfico de dispersão
+ggplot(abalone_len_shell, aes(x = shell_w, y = length)) +
+  geom_point() +
+  # adiciona reta de regressão estimada 
+  geom_smooth(method = lm, se = FALSE)
+```
+  - Par `length`-`rings``:
+  
+  `lenght = 0.31818 + 0.02072.rings` (Modelo Ajustado)
+  
+  O coeficiente linear não tem sentido prático, pois se o número de anéis é zero, este fato deveria implicar em um comprimento da concha igual a zero. O coeficiente angular indica um aumento no comprimento da concha para cada incremento no número de anéis.
+  
+```{r reta4}
+# gera gráfico de dispersão
+ggplot(abalone_len_rings, aes(x = rings, y = length)) +
+  geom_point() +
+  # adiciona reta de regressão estimada 
+  geom_smooth(method = lm, se = FALSE)
+```
+  
+  
+  + Calcule o MSE para cada modelo. Que variável explicativa produz menor variabilidade em torno da reta de regressão ajustada?  
+  
+  Analisando o resumo do modelo de regressão ajustado:
+  
+```{r red_summary1}
+#Obtenção do sigma e do R2
+summary1 <- summary(abalone_rls1)
+sigma1 <- summary1$sigma
+r2_1 <- summary1$r.squared
+sigma1
+#Cálculo do MSE
+mse1 <- sigma1^2
+mse1
+```
+  Logo, o valor de `sigma` nesse caso é igual a 0.01944569. E sabe-se que o estimador da variância dos erros (MSE) é  igual ao `sigma` elevado ao quadrado.
+  
+  MSE = 0.000378135
+  
+```{r reg_summary2}
+#Obtenção do sigma e do R2
+summary2 <- summary(abalone_rls2)
+sigma2 <- summary2$sigma
+r2_2 <- summary2$r.squared
+sigma2
+#Cálculo do MSE
+mse2 <- sigma2^2
+mse2
+```
+   O valor de `sigma` é 0.05287079. Elevando sigma ao quadrado é possível obter o valor do MSE:
+   
+   MSE = 0.002795321
+  
+```{r reg_summary3}
+#Obtenção do sigma e do R2
+summary3 <- summary(abalone_rls3)
+sigma3 <- summary3$sigma
+r2_3 <- summary3$r.squared
+sigma3
+#Cálculo do MSE
+mse3 <- sigma3^2
+mse3
+```
+  Multiple R-squared (MSR):  0.8072
+  
+```{r reg_summary4}
+summary(abalone_rls4)
+```
+  Multiple R-squared:  0.3097
+  
+  + Utilizando R^2^ como critério, qual das variáveis explicativas contribui para a maior redução na variabilidade da resposta `age`?
+  
+```{r r2square}
+r2_1
+
+r2_2
+
+
+```
+
+  
+  - Par `length`-`diameter`:  R-squared:  0.9737772
+  - Par `length`-`shucked_w`: R-squared:  0.8061509
+  - Par `length`-`shell_w`:   R-squared:  0.8071
+  - Par `length`-`rings`:     R-squared:  0.3095
+  
+  
+#### Parte 2: Construção de um modelo de regressão linear simples para cada nível da variável `sex`.
+
+Para cada nível da variável `sex`, foi construído um modelo de regressão para a variável de resposta `length` em função de `diameter`. 
+
+Para analisar cada nível da variável `sex`, foi criada novas variáveis a fim de facilitar a análise, utilizando para tal a função `filter()`.
+
+Primeiro, vamos separar o *dataset* para cada nível de `sex`. Dessa forma, foi criada 3 novas variáveis, uma para valor possível de `sex`(M, F e I).
+
+```{r separasex_m}
+sexo <- 'M'
+abalone_m <- abalone %>%
+  filter(sex == sexo) %>%
+  select(length, diameter)
+abalone_m
+```
+
+```{r separasex_f}
+sexo <- 'F'
+abalone_f <- abalone %>%
+  filter(sex == sexo) %>%
+  select(length, diameter)
+abalone_f
+```
+
+```{r separasex_i}
+sexo <- 'I'
+abalone_i <- abalone %>%
+  filter(sex == sexo) %>%
+  select(length, diameter)
+abalone_i
+```
+
+Nota-se que a soma das linhas de cada *subset* é igual total de 4175 observações, ou seja, a separação da base de dados foi realiada corretamente.
+
+Agora, verfica-se que a implementação de um modelo de regressão linear simples é adequada por meio da construção dos gráficos de dispersão:
+
+```{r dispersao2}
+#M
+ggplot(abalone_m) +
+  geom_point(aes(x= length, y = diameter), na.rm = TRUE)
+#F
+ggplot(abalone_f) +
+  geom_point(aes(x= length, y = diameter), na.rm = TRUE)
+#I
+ggplot(abalone_i) +
+  geom_point(aes(x= length, y = diameter), na.rm = TRUE)
+```
+Pelos gráficos acima, percebe-se que o modelo de regressão linear é adequado. Porém, para dar mais embasamento e esta decisão, foram calculados os coeficientes de correlação:
+
+```{r corr2}
+#M
+cor(abalone_m$length, abalone_m$diameter)
+#F
+cor(abalone_f$length, abalone_f$diameter)
+#I
+cor(abalone_i$length, abalone_i$diameter)
+```
+Todos os coeficientes de correlação são muito próximos de 1. Logo, aplicar um modelo de regressão linear simples é dequado para esses casos.
+
+  + Obtendo os modelos de regressão ajustados.  
+  
+```{r summary_m}
+summary(abalone_m)
+```
+```{r modred_m}
+# Constrói modelo de regressao linear simples (rls)
+abalone_rls_m <- lm(length ~ diameter, data = abalone_m)
+# variável de resposta: `lenght` 
+# variável explicativa: `diameter`
+
+# retorna coeficientes estimados do modelo de rls
+abalone_rls_m
+```
+```{r redmod_f}
+
+```
+
+  **Modelos Ajustados**
+  
+  1. Para `sex` igual a `M`: `length = 0.03653 +  1.19480.diameter`
+  
+  2. Para `sex` igual a `F`:
+  
+  3. Para `sex` igual a `I`:
+  
+  + As funções de regressão estimadas são semelhantes para todos os níveis da variável `sex`? Discuta. 
+  + Calcule o MSE para cada nível da variável `sex`. A variabilidade em torno da reta de regressão ajustada é semelhante para todos os níveis?  
+  + Construa intervalos de confiança 95% para o coeficiente angular da reta de regressão para cada nível da variável `sex`. As retas de regressão para diferentes níveis parecem ter mesma inclinação? O que se pode concluir?  
+  + Construa intervalos de confiança para a resposta esperada correspondendo a `diameter = 90`, para cada nível da variável `sex`. O que se pode concluir?  
+  + Construa intervalos de previsão para um novo animal de cada sexo que tenha `diameter = 90`. O que se pode concluir?
+
+3. Para cada nível da variável `sex`, construa um modelo de regressão para a variável de resposta `length` em função de `shell_w`. Assuma que o modelo de 1a. ordem é adequado para modelar essas relações. 
+
+  + Obtenha os modelos de regressão ajustados.  
+  + As funções de regressão estimadas são semelhantes para todos os níveis da variável `sex`? Discuta. 
+  + Calcule o MSE para cada nível da variável `sex`. A variabilidade em torno da reta de regressão ajustada é semelhante para todos os níveis?  
+  + Construa intervalos de confiança 95% para o coeficiente angular da reta de regressão para cada nível da variável `sex`. As retas de regressão para diferentes níveis parecem ter mesma inclinação? O que se pode concluir?  
+  + Construa intervalos de confiança para a resposta esperada correspondendo a `shell_w = 50`, para cada nível da variável `sex`. O que se pode concluir? 
+  + Faz sentido aplicar alguma transformação à variável explicativa? Em caso positivo, replique os itens anteriores para um modelo para a variável explicativa transformada.
+
+  
+
+----
