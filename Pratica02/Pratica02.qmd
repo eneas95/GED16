@@ -56,7 +56,7 @@ O primeiro passo realizado foi limpar a área de trabalho com o comando `rm(list
 
 - Bibliotecas utilizadas:
 
-```{r libraries}
+```{r libraries, eval=FALSE}
 #| warning: false
 #| message: false
 library(tinytex)
@@ -70,7 +70,7 @@ library(tidyverse)
 
 - A Equipe, por razões de reproducibilidade, optou por importar a base de dados de um repositório do *github*:
   
-```{r importdata}
+```{r importdata, eval=FALSE}
 #Limpar a área de trabalho
 rm(list=ls())
 #carregar os dados
@@ -86,19 +86,19 @@ str(abalone)
 ```
 FOi verificado que existe 4.177 observações e 9 variáveis. Cada observação corresponde a uma linha do objeto tabela `abalone`, conforme exibido logo abaixo.
 
-```{r table}
+```{r table, eval=FALSE}
 pander(abalone[1:10,], caption = "Primeiras 10 linhas do dataset abalone.")
 ```
 
 Ademais, percebe-se que `sex` está codificado como um *character*, porém, para realização da análise exploratória, deseja-se que ela seja recodificada como *factor*. A variável *rings* também será recodificada com um *integer* no intuito de ocupar menos espaço na memória.
 
-```{r names}
+```{r names, eval=FALSE}
 #Verificar os nomes das variáveis
 names(abalone)
 ```
 
 - Agora, recodificando as variáveis em questão:
-```{r recode}
+```{r recode, eval=FALSE}
 abalone <- abalone %>%
   mutate_at("sex", as.factor) %>%
   mutate_at("rings", as.integer)
@@ -108,7 +108,7 @@ Utilizando a função `str(auto)` novamente, verificou-se que agora os dados est
 
 No intuito de se obter resumos numéricos unidimensionais foi utilizada a função `summary`. Para as variáveis categóricas, a função `summary` retorna o número de observações em cada classe.
 
-```{r summary1}
+```{r summary1, eval=FALSE}
 summary(abalone)
 ```
 É possível perceber por meio da função `summary` que, apesar de não haver dados faltantes, existem inconsistências na coluna `height`, visto que a altura do molusco deve ser sempre um valor numérico maior do que zero.
@@ -116,7 +116,7 @@ No entanto, é necessário analisar a quantidade de dados inconsistentes nessa a
 
 - A Equipe desenvolveu o seguinte código em R para determinar esta quantidade:
 
-```{r countzero}
+```{r countzero, eval=FALSE}
 error <- 0.000000001
 count_r <- 0
 for (height in abalone$height){
@@ -130,7 +130,7 @@ count_r
 Logo, como há apenas 2 casos com inconsistências, a Equipe decidiu desprezá-los e retirá-los do *dataset*, uma vez que eram poucos comparados com o total de 4.177 observações.
 
 - Para tal, foi utilizada a função `filter´:
-```{r filter2}
+```{r filter2, eval=FALSE}
 abalone <- abalone %>% filter(height > 0)
 summary(abalone)
 ```
@@ -145,7 +145,7 @@ As 2 linhas com altura 0 foram retiradas do *dataset* e, por conseguinte, restar
 
 Por meio de histograma, é possível apresentar a distribuição dos valores observados para uma variável. No caso, foram gerados os histogramas para as variáveis `length`e `height`.
 
-```{r lengthhist}
+```{r lengthhist, eval=FALSE}
 #| message: false 
 # Histograma de `lenght`
 ggplot(abalone, aes(x = length)) +
@@ -156,7 +156,7 @@ ggplot(abalone, aes(x = length)) +
   # adiciona dispersão unidimensional de `length`
   geom_rug(alpha = 0.5)
 ```
-```{r heighthist}
+```{r heighthist, eval=FALSE}
 #| message: false 
 # Histograma de `height`
 ggplot(abalone, aes(x = height)) +
@@ -172,7 +172,7 @@ A curva em azul claro adicionada ao histograma é a curva de densidade estimada,
 
 Também foram gerados os gráficos *boxplot* para essas duas variáveis:
 
-```{r boxplot1}
+```{r boxplot1, eval=FALSE}
 # Boxplot de `length`
 ggplot(abalone, aes(x = length, y = "")) +
   # adiciona barras de erros
@@ -185,7 +185,7 @@ ggplot(abalone, aes(x = length, y = "")) +
   labs(y = "", x = "length")
 ```
 
-```{r boxplot2}
+```{r boxplot2, eval=FALSE}
 # Boxplot de `height`
 ggplot(abalone, aes(x = height, y = "")) +
   # adiciona barras de erros
@@ -207,19 +207,19 @@ Logo, é possível vizualizar pelo *boxplot* da variável *height* que existem 2
 
 No intuito de comparar visualmente diferentes distribuições e analisar a relação entre as variáveis, foram gerados os seguintes boxplots, histogramas e curvas de densidade estimada, para diferentes categorias. Primeiramente, a Equipe decidiu comparar o número de anéis (rings) com as distintas categorias da variável `sex`. Será que o número de anéis difere de acordo com o sexo?
 
-```{r mult1}
+```{r mult1, eval=FALSE}
 # Boxplots
 ggplot(abalone, aes(x = rings, y = sex)) +
   geom_boxplot()
 ```
 
-```{r mult2}
+```{r mult2, eval=FALSE}
 # Histogramas 
 ggplot(abalone, aes(x = rings, fill = sex)) +
   geom_histogram(alpha = 0.25, position = "identity")
 ```
 
-```{r mult3}
+```{r mult3, eval=FALSE}
 # Densidades
 ggplot(abalone, aes(x = rings, fill = sex)) +
   geom_density(alpha = 0.5, position = "identity")
@@ -229,12 +229,12 @@ Pelos gráficos acima, não é possível chegar a uma conclusão. O *boxplot* e 
 
 Em seguida, para analisar a relação entre variáveis quantitativas, foram gerados gráficos de dispersão:
 
-```{r dispersao}
+```{r dispersao, eval=FALSE}
 # Matriz de gráficos de dispersão (base R)
 plot(abalone[, -c(1)])
 ```
 
-```{r ggally}
+```{r ggally, eval=FALSE}
 #| warning: false
 #| message: false
 # Matriz de gráficos de dispersão (GGali)
@@ -244,18 +244,18 @@ ggpairs(abalone[, -c(1)])
 
 A partir dos gráficos acima, é possível ter uma ideia geral de como as variáveis quantitativas se relacionam. Por exemplo, as variáveis `length`, `diameter`, `height`, `whole_w`, `shucked_w`, `viscera_w` e `shell_w` possuem elevados coeficientes de correlação entre si. A variável `rings` é aquela que mais distoa nesse sentindo.
 
-```{r cor1}
+```{r cor1, eval=FALSE}
 # Coef. de correlacao
 cor (abalone$rings, abalone$shucked_w)
 ```
 O número de anéis da concha (rings) possui uma correlação baixa com o peso da carne (shucked_w), por exemplo.
 
-```{r cor2}
+```{r cor2, eval=FALSE}
 cor (abalone$rings, abalone$shell_w)
 ```
 Todas as correlações entre as variáveis são positivas, o que faz sentido dado que está se analisando peso, tamanho, altura e número de anéis. Além disso, percebe-se que o número de aneis é o menos correlacionável com as outras variáveis. Porém, a maior correlação é com o peso da concha, o que faz sentido de certa maneira pois quanto maior a concha, maior o número de anéis.
 
-```{r rings_shell}
+```{r rings_shell, eval=FALSE}
 ggplot(abalone) +
   geom_point(aes(x= rings, y = shell_w), na.rm = TRUE)
 ```
@@ -265,7 +265,7 @@ Dessa forma, a Equipe formulou a seguinte hipótese: à medida em que o animal e
 
 A relação estatística entre a variável altura e peso do animal é curvilínea conforme mostra o gráfico abaixo, o qual também evidencia a alta correlação entre essas duas variáveis.
 
-```{r h_whole}
+```{r h_whole, eval=FALSE}
 ggplot(abalone) +
   geom_point(aes(x= height, y = whole_w), na.rm = TRUE)
 ```
@@ -273,7 +273,7 @@ Existem 2 outliers de acordo com o gráfico acima, o que confere com o que fora 
 
 Além disso, é possível realizar certas transformções á variàvel `height` a fim de auxiliar no processo de formulação de novas hipóteses.
 
-```{r trans}
+```{r trans, eval=FALSE}
 
 ggplot(abalone) +
   geom_point(aes(x= sqrt(height), y = whole_w), na.rm = TRUE)
@@ -488,7 +488,6 @@ r2_1 <- summary1$r.squared
 sigma1
 #Cálculo do MSE
 mse1 <- sigma1^2
-mse1
 ```
   Logo, o valor de `sigma` nesse caso é igual a 0.01944569. E sabe-se que o estimador da variância dos erros (MSE) é  igual ao `sigma` elevado ao quadrado.
   
@@ -502,13 +501,12 @@ r2_2 <- summary2$r.squared
 sigma2
 #Cálculo do MSE
 mse2 <- sigma2^2
-mse2
 ```
    O valor de `sigma` é 0.05287079. Elevando sigma ao quadrado é possível obter o valor do MSE:
    
    MSE = 0.002795321
   
-```{r reg_summary3}
+```{r red_summary3}
 #Obtenção do sigma e do R2
 summary3 <- summary(abalone_rls3)
 sigma3 <- summary3$sigma
@@ -516,30 +514,53 @@ r2_3 <- summary3$r.squared
 sigma3
 #Cálculo do MSE
 mse3 <- sigma3^2
+```
+  O valor de `sigma` é 0.05273337. Elevando sigma ao quadrado é possível obter o valor do MSE:
+  
+  MSE = 0.002780808
+  
+```{r red_summary4}
+#Obtenção do sigma e do R2
+summary4 <- summary(abalone_rls4)
+sigma4 <- summary4$sigma
+r2_4 <- summary4$r.squared
+sigma4
+#Cálculo do MSE
+mse4 <- sigma4^2
+```
+  O valor de `sigma` é 0.09977409. Elevando `sigma` ao quadrado é possível obter o valor do MSE:
+  
+  MSE = 0.009954869
+  
+```{r mse_results}
+mse1
+
+mse2
+
 mse3
+
+mse4
 ```
-  Multiple R-squared (MSR):  0.8072
   
-```{r reg_summary4}
-summary(abalone_rls4)
-```
-  Multiple R-squared:  0.3097
+  Portanto, dado que o MSE é um estimador da variância para o modelo de regressão linear simples, a variável explicativa que tiver o menor valor de MSE é aquele que possui a menor variabilidade em torno da reta de regressão ajustada, no caso, a variável `shell_w`. Importante ressaltar que os valores de MSE para as variáveis `shell_w` e `shucked_w` obtidos foram semelhantes, ou seja, possuem variablidades semelhantes em torno da reta de regressão.
   
-  + Utilizando R^2^ como critério, qual das variáveis explicativas contribui para a maior redução na variabilidade da resposta `age`?
+  + Utilizando R^2^ como critério, qual das variáveis explicativas contribui para a maior redução na variabilidade da resposta `length`?
   
 ```{r r2square}
 r2_1
 
 r2_2
 
+r2_3
 
+r2_4
 ```
-
-  
   - Par `length`-`diameter`:  R-squared:  0.9737772
   - Par `length`-`shucked_w`: R-squared:  0.8061509
-  - Par `length`-`shell_w`:   R-squared:  0.8071
-  - Par `length`-`rings`:     R-squared:  0.3095
+  - Par `length`-`shell_w`:   R-squared:  0.8071573
+  - Par `length`-`rings`:     R-squared:  0.3096526
+  
+  O coeficiente de determinação *R-squared* é a fração em que a variância dos erros é menor do que a variância das variáveis dependentes. Este coeficiente indica o quão bem o modelo de regressão aplicado se aproxima dos dados reais. Logo, um *R-squared* de 0.974, isto é, próximo de um 1, obtido pela variável explicativa `diameter`, indica uma maior redução na variabilidade da variável resposta `length'.
   
   
 #### Parte 2: Construção de um modelo de regressão linear simples para cada nível da variável `sex`.
@@ -552,26 +573,26 @@ Primeiro, vamos separar o *dataset* para cada nível de `sex`. Dessa forma, foi 
 
 ```{r separasex_m}
 sexo <- 'M'
-abalone_m <- abalone %>%
+abalone2_m <- abalone %>%
   filter(sex == sexo) %>%
   select(length, diameter)
-abalone_m
+abalone2_m
 ```
 
 ```{r separasex_f}
 sexo <- 'F'
-abalone_f <- abalone %>%
+abalone2_f <- abalone %>%
   filter(sex == sexo) %>%
   select(length, diameter)
-abalone_f
+abalone2_f
 ```
 
 ```{r separasex_i}
 sexo <- 'I'
-abalone_i <- abalone %>%
+abalone2_i <- abalone %>%
   filter(sex == sexo) %>%
   select(length, diameter)
-abalone_i
+abalone2_i
 ```
 
 Nota-se que a soma das linhas de cada *subset* é igual total de 4175 observações, ou seja, a separação da base de dados foi realiada corretamente.
@@ -580,54 +601,107 @@ Agora, verfica-se que a implementação de um modelo de regressão linear simple
 
 ```{r dispersao2}
 #M
-ggplot(abalone_m) +
+ggplot(abalone2_m) +
   geom_point(aes(x= length, y = diameter), na.rm = TRUE)
 #F
-ggplot(abalone_f) +
+ggplot(abalone2_f) +
   geom_point(aes(x= length, y = diameter), na.rm = TRUE)
 #I
-ggplot(abalone_i) +
+ggplot(abalone2_i) +
   geom_point(aes(x= length, y = diameter), na.rm = TRUE)
 ```
 Pelos gráficos acima, percebe-se que o modelo de regressão linear é adequado. Porém, para dar mais embasamento e esta decisão, foram calculados os coeficientes de correlação:
 
 ```{r corr2}
 #M
-cor(abalone_m$length, abalone_m$diameter)
+cor(abalone2_m$length, abalone2_m$diameter)
 #F
-cor(abalone_f$length, abalone_f$diameter)
+cor(abalone2_f$length, abalone2_f$diameter)
 #I
-cor(abalone_i$length, abalone_i$diameter)
+cor(abalone2_i$length, abalone2_i$diameter)
 ```
 Todos os coeficientes de correlação são muito próximos de 1. Logo, aplicar um modelo de regressão linear simples é dequado para esses casos.
 
   + Obtendo os modelos de regressão ajustados.  
   
 ```{r summary_m}
-summary(abalone_m)
+summary(abalone2_m) 
 ```
 ```{r modred_m}
 # Constrói modelo de regressao linear simples (rls)
-abalone_rls_m <- lm(length ~ diameter, data = abalone_m)
+abalone2_rls_m <- lm(length ~ diameter, data = abalone2_m)
 # variável de resposta: `lenght` 
 # variável explicativa: `diameter`
 
 # retorna coeficientes estimados do modelo de rls
-abalone_rls_m
+abalone2_rls_m
 ```
-```{r redmod_f}
+```{r modred_f}
+# Constrói modelo de regressao linear simples (rls)
+abalone2_rls_f <- lm(length ~ diameter, data = abalone2_f)
+# variável de resposta: `lenght` 
+# variável explicativa: `diameter`
 
+# retorna coeficientes estimados do modelo de rls
+abalone2_rls_f
 ```
+```{r modred_i}
+# Constrói modelo de regressao linear simples (rls)
+abalone2_rls_i <- lm(length ~ diameter, data = abalone2_i)
+# variável de resposta: `lenght` 
+# variável explicativa: `diameter`
+
+# retorna coeficientes estimados do modelo de rls
+abalone2_rls_i
+```
+
 
   **Modelos Ajustados**
   
-  1. Para `sex` igual a `M`: `length = 0.03653 +  1.19480.diameter`
+  1. Para `sex` igual a `M`: `length = 0.03653 + 1.19480.diameter`
   
-  2. Para `sex` igual a `F`:
+  2. Para `sex` igual a `F`: `length = 0.04288 + 1.17918.diameter`
   
-  3. Para `sex` igual a `I`:
+  3. Para `sex` igual a `I`: `length = 0.02995 + 1.21840.diameter`
+  
+```{r}
+#M
+ggplot(abalone2_m, aes(x = diameter, y = length)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)
+#F
+ggplot(abalone2_f, aes(x = diameter, y = length)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)
+#I
+ggplot(abalone2_i, aes(x = diameter, y = length)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)
+```
+  
+```{r}
+#M
+line1 <- function(x) 0.03653 + 1.19480*x
+line2 <- function(x) 0.04288 + 1.17918*x
+line3 <- function(x) 0.02995 + 1.21840*x
+
+x <- seq(0, 0.63, by = 0.01)
+
+y1 <- sapply(x, line1)
+y2 <- sapply(x, line2)
+y3 <- sapply(x, line3)
+
+plot(x, y1, type = "l", col = "blue", lwd = 2, xlab = "diameter", ylab = "length")
+lines(x, y2, type = "l", col = "green", lwd = 2)
+lines(x, y3, type = "l", col = "red", lwd = 2)
+legend("topleft", legend = c("M", "F", "I"), col = c("blue", "green", "red"), lty = 1, lwd = 2)
+```
+  
   
   + As funções de regressão estimadas são semelhantes para todos os níveis da variável `sex`? Discuta. 
+  
+  Conforme o gráfico apresentado acima com as 3 retas de regressão, nota-se visualmente que as funções e regressão obtidas são semelhantes> Isto ocorre pois os coeficientes das retas de regressão possuem valores próximos uns dos outros.
+  
   + Calcule o MSE para cada nível da variável `sex`. A variabilidade em torno da reta de regressão ajustada é semelhante para todos os níveis?  
   + Construa intervalos de confiança 95% para o coeficiente angular da reta de regressão para cada nível da variável `sex`. As retas de regressão para diferentes níveis parecem ter mesma inclinação? O que se pode concluir?  
   + Construa intervalos de confiança para a resposta esperada correspondendo a `diameter = 90`, para cada nível da variável `sex`. O que se pode concluir?  
